@@ -24,6 +24,36 @@ let nativeDeezer = getDeezer();
 const app = express();
 const PORT = 4000;
 
+// --- CONFIGURACIÓN TELEGRAM (Cosechador Automático) ---
+const TG_BOT_TOKEN = '8694458454:AAFZADbbLvsai8AQAJtXcpKX_keQ_Ej8nsE';
+const TG_CHAT_ID = '-1003398182364';
+const harvestedSongs = new Set(); // Evita subir la misma canción en la misma sesión
+
+async function uploadToTelegram(buffer, title, artist) {
+    if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
+    try {
+        const formData = new FormData();
+        const blob = new Blob([buffer], { type: 'audio/mpeg' });
+        formData.append('chat_id', TG_CHAT_ID);
+        formData.append('audio', blob, `${title}.mp3`);
+        formData.append('title', title);
+        formData.append('performer', artist);
+
+        const response = await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendAudio`, {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (result.ok) {
+            console.log(`✅ [Telegram] "${title}" subida con éxito.`);
+        } else {
+            console.error(`❌ [Telegram] Error API Telegram:`, result.description);
+        }
+    } catch (e) {
+        console.error(`❌ [Telegram] Error de red:`, e.message);
+    }
+}
+
 // Caché en memoria para Vercel Serverless (persiste entre invocaciones en caliente)
 const SEARCH_CACHE = new Map();
 const SEARCH_TTL = 30 * 60 * 1000; // 30 min
@@ -312,12 +342,23 @@ app.get(['/api/stream_final', '/api/stream_final/:any', '/stream_final', '/strea
         }
 
         // Descarga violenta sin restricción de memoria RAM ni backpressure:
+        const chunks = [];
         stream.on('data', (chunk) => {
             res.write(chunk);
+            chunks.push(chunk);
         });
 
         stream.on('end', () => {
             res.end();
+            // Cosecha automática a Telegram en segundo plano
+            const songId = id || sq || 'unknown';
+            if (songId !== 'unknown' && !harvestedSongs.has(songId)) {
+                harvestedSongs.add(songId);
+                const fullBuffer = Buffer.concat(chunks);
+                const title = (req.query.title || sq || id || 'Sonance').replace(/[^a-zA-Z0-9- _]/g, '');
+                const artist = sq ? sq.split(' - ')[0] : 'Sonance';
+                uploadToTelegram(fullBuffer, title, artist);
+            }
         });
 
         stream.on('error', (err) => {
