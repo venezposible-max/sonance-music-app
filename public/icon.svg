@@ -1,0 +1,9 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 153.6 179.2 C 153.6 102.4, 358.4 102.4, 358.4 179.2 C 358.4 256, 153.6 256, 153.6 332.8 C 153.6 409.6, 358.4 409.6, 358.4 332.8" stroke="url(#sonanceGradLarge)" stroke-width="61.44" stroke-linecap="round" fill="none" />
+    <defs>
+        <linearGradient id="sonanceGradLarge" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00f2ff" />
+            <stop offset="100%" stop-color="#7000ff" />
+        </linearGradient>
+    </defs>
+</svg>

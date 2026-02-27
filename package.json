@@ -1,0 +1,39 @@
+{
+  "name": "freemusic-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node api/server.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@distube/ytdl-core": "^4.16.12",
+    "@flazepe/deezer.js": "^2.0.8",
+    "axios": "^1.13.5",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "lucide-react": "^0.441.0",
+    "play-dl": "^1.9.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-player": "^3.4.0",
+    "sharp": "^0.34.5",
+    "soundcloud-downloader": "^1.0.0",
+    "soundcloud-scraper": "^5.0.3",
+    "youtube-ext": "^1.1.25",
+    "youtube-search-api": "^2.0.1",
+    "youtubei.js": "^16.0.1",
+    "yt-search": "^2.13.1",
+    "ytmusic-api": "^5.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.2"
+  }
+}

@@ -1,0 +1,12 @@
+[
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.sonance_eight.twa",
+        "sha256_cert_fingerprints": [
+          "5E:9B:F7:57:4A:42:07:95:F4:7D:6F:A8:12:34:56:78:90:AB:CD:EF:G1:H2:I3:J4:K5:L6:M7:N8:O9:P0"
+        ]
+      }
+    }
+  ]

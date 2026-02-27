@@ -1,0 +1,42 @@
+{
+    "short_name": "Sonance",
+    "name": "Sonance - High Fidelity Streaming",
+    "description": "Premium music streaming experience with offline support and dynamic UI.",
+    "icons": [
+        {
+            "src": "icon.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#00f2ff",
+    "background_color": "#000000",
+    "orientation": "portrait",
+    "scope": "/",
+    "categories": ["music", "entertainment"],
+    "shortcuts": [
+        {
+            "name": "Favoritos",
+            "url": "/?tab=FAVORITES",
+            "icons": [{ "src": "icon.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Biblioteca",
+            "url": "/?tab=PLAYLISTS",
+            "icons": [{ "src": "icon.png", "sizes": "192x192" }]
+        }
+    ]
+}

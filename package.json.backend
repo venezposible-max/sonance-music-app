@@ -1,0 +1,28 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "@flazepe/deezer.js": "^2.0.8",
+    "axios": "^1.13.5",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "play-dl": "^1.9.7",
+    "sharp": "^0.34.5",
+    "soundcloud-downloader": "^1.0.0",
+    "soundcloud-scraper": "^5.0.3",
+    "youtube-ext": "^1.1.25",
+    "youtube-search-api": "^2.0.1",
+    "youtubei.js": "^16.0.1",
+    "yt-search": "^2.13.1",
+    "ytmusic-api": "^5.3.1"
+  },
+  "description": ""
+}
