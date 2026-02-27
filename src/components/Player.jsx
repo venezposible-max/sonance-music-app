@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, SkipForward, SkipBack, Heart, Volume2 } from 'lucide-react';
 
 export default function Player({
@@ -8,6 +8,12 @@ export default function Player({
     volume, handleVolume, setProgress, status
 }) {
     const isFavorite = currentSong ? favoriteIdsSet.has(currentSong.id) : false;
+    const [localProgress, setLocalProgress] = useState(0);
+    const [isSeeking, setIsSeeking] = useState(false);
+
+    useEffect(() => {
+        if (!isSeeking) setLocalProgress(progress);
+    }, [progress, isSeeking]);
 
     const formatTime = (time) => {
         if (!isFinite(time) || isNaN(time)) return "0:00";
@@ -36,7 +42,7 @@ export default function Player({
                 <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ width: '100%', padding: '12px 16px 4px 16px', position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ fontSize: '10px', color: '#a0a0a0', fontVariantNumeric: 'tabular-nums', width: '32px', textAlign: 'right' }}>
-                            {formatTime(progress)}
+                            {formatTime(localProgress)}
                         </span>
                         <div style={{ flex: 1, position: 'relative', height: '16px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                             onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); if (duration > 0 && isFinite(duration)) setProgress(((e.clientX - r.left) / r.width) * duration); }}
@@ -44,18 +50,24 @@ export default function Player({
                             <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', pointerEvents: 'none', position: 'absolute' }}>
                                 <div style={{
                                     position: 'absolute', top: 0, left: 0, height: '100%',
-                                    background: 'var(--s-primary)', width: `${Math.min(100, Math.max(0, (duration > 0 && isFinite(duration)) ? (progress / duration) * 100 : 0))}%`,
-                                    boxShadow: '0 0 8px var(--s-primary)', borderRadius: '2px', transition: 'width 0.1s linear'
+                                    background: 'var(--s-primary)', width: `${Math.min(100, Math.max(0, (duration > 0 && isFinite(duration)) ? (localProgress / duration) * 100 : 0))}%`,
+                                    boxShadow: '0 0 8px var(--s-primary)', borderRadius: '2px', transition: isSeeking ? 'none' : 'width 0.1s linear'
                                 }} />
                                 <div style={{
-                                    position: 'absolute', top: '50%', left: `${Math.min(100, Math.max(0, (duration > 0 && isFinite(duration)) ? (progress / duration) * 100 : 0))}%`,
+                                    position: 'absolute', top: '50%', left: `${Math.min(100, Math.max(0, (duration > 0 && isFinite(duration)) ? (localProgress / duration) * 100 : 0))}%`,
                                     transform: 'translate(-50%, -50%)', width: '10px', height: '10px',
                                     background: '#fff', borderRadius: '50%', pointerEvents: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
                                 }} />
                             </div>
                             <input
-                                type="range" min="0" max={isFinite(duration) ? Math.floor(duration) : 100} step="any" value={progress}
-                                onChange={(e) => { if (duration > 0 && isFinite(duration)) setProgress(parseFloat(e.target.value)); }}
+                                type="range" min="0" max={isFinite(duration) ? Math.floor(duration) : 100} step="any" value={localProgress}
+                                onPointerDown={() => setIsSeeking(true)}
+                                onTouchStart={() => setIsSeeking(true)}
+                                onMouseDown={() => setIsSeeking(true)}
+                                onChange={(e) => { if (duration > 0 && isFinite(duration)) setLocalProgress(parseFloat(e.target.value)); }}
+                                onPointerUp={(e) => { if (duration > 0 && isFinite(duration)) { setProgress(parseFloat(e.target.value)); setIsSeeking(false); } }}
+                                onTouchEnd={(e) => { if (duration > 0 && isFinite(duration)) { setProgress(parseFloat(e.target.value)); setTimeout(() => setIsSeeking(false), 300); } }}
+                                onMouseUp={(e) => { if (duration > 0 && isFinite(duration)) { setProgress(parseFloat(e.target.value)); setTimeout(() => setIsSeeking(false), 300); } }}
                                 style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, opacity: 0, margin: 0, padding: 0, cursor: 'pointer', zIndex: 2 }}
                             />
                         </div>
@@ -110,10 +122,21 @@ export default function Player({
                             <SkipForward size={20} className="player-icon" onClick={nextTrack} />
                         </div>
                         <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="time-label">{formatTime(progress)}</span>
-                            <div className="spotify-progress-bg" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); if (duration > 0 && isFinite(duration)) setProgress(((e.clientX - r.left) / r.width) * duration); }}>
-                                <div className="spotify-progress-fill" style={{ width: `${(duration > 0 && isFinite(duration)) ? (progress / duration) * 100 : 0}%` }} />
-                                <div className="spotify-progress-knob" style={{ left: `${(duration > 0 && isFinite(duration)) ? (progress / duration) * 100 : 0}%` }} />
+                            <span className="time-label">{formatTime(localProgress)}</span>
+                            <div className="spotify-progress-bg" style={{ position: 'relative' }}>
+                                <div className="spotify-progress-fill" style={{ width: `${(duration > 0 && isFinite(duration)) ? (localProgress / duration) * 100 : 0}%`, transition: isSeeking ? 'none' : 'width 0.1s linear' }} />
+                                <div className="spotify-progress-knob" style={{ left: `${(duration > 0 && isFinite(duration)) ? (localProgress / duration) * 100 : 0}%`, transition: isSeeking ? 'none' : 'left 0.1s linear' }} />
+                                <input
+                                    type="range" min="0" max={isFinite(duration) ? Math.floor(duration) : 100} step="any" value={localProgress}
+                                    onPointerDown={() => setIsSeeking(true)}
+                                    onTouchStart={() => setIsSeeking(true)}
+                                    onMouseDown={() => setIsSeeking(true)}
+                                    onChange={(e) => { if (duration > 0 && isFinite(duration)) setLocalProgress(parseFloat(e.target.value)); }}
+                                    onPointerUp={(e) => { if (duration > 0 && isFinite(duration)) { setProgress(parseFloat(e.target.value)); setIsSeeking(false); } }}
+                                    onTouchEnd={(e) => { if (duration > 0 && isFinite(duration)) { setProgress(parseFloat(e.target.value)); setTimeout(() => setIsSeeking(false), 300); } }}
+                                    onMouseUp={(e) => { if (duration > 0 && isFinite(duration)) { setProgress(parseFloat(e.target.value)); setTimeout(() => setIsSeeking(false), 300); } }}
+                                    style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, opacity: 0, margin: 0, padding: 0, cursor: 'pointer', zIndex: 2 }}
+                                />
                             </div>
                             <span className="time-label">{formatTime(duration)}</span>
                         </div>
