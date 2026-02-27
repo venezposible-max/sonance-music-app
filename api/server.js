@@ -290,6 +290,12 @@ app.get(['/api/stream_final', '/api/stream_final/:any', '/stream_final', '/strea
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Cache-Control', 'public, s-maxage=31536000, max-age=31536000, stale-while-revalidate');
 
+        if (req.query.dl) {
+            const safeTitle = (req.query.title || sq || id || 'song').replace(/[^a-zA-Z0-9- _]/g, '');
+            res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.mp3"`);
+            res.setHeader('Content-Type', 'application/octet-stream'); // Force download on stubborn browsers
+        }
+
         const range = req.headers.range;
         if (range && size) {
             if (range === 'bytes=0-') {

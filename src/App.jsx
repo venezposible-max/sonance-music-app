@@ -291,8 +291,10 @@ export default function App() {
     };
 
     const downloadSong = (song) => {
-        const url = `${apiURL}/stream_final?id=${song.id}&dl=1`;
-        const a = document.createElement('a'); a.href = url; a.download = `${song.title}.mp3`; a.click();
+        const titleSafe = encodeURIComponent(song.title || 'song');
+        const sqSafe = encodeURIComponent((song.artist || '') + ' ' + (song.title || ''));
+        const url = `${apiURL}/stream_final?id=${song.id}&sq=${sqSafe}&dl=1&title=${titleSafe}`;
+        const a = document.createElement('a'); a.href = url; a.download = `${titleSafe}.mp3`; a.click();
     };
 
     return (
