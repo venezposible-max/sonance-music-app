@@ -35,63 +35,63 @@ async function uploadToTelegram(buffer, title, artist) {
 }
 
 async function startHarvesting() {
-    console.log("🚀 Iniciando Rastreador Automático de Éxitos...");
+    console.log("🚀 Iniciando Rastreador Automático MULTI-GÉNERO (24/7)...");
+
+    // IDs de Charts de Deezer: Global (0), Pop (132), Rock (116), Latina (197), Reggaeton (152), Dance (113), etc.
+    const genreIds = [0, 132, 116, 197, 152, 113, 165, 85, 106];
 
     while (true) {
-        try {
-            // 1. Obtener éxitos globales de Deezer (Chart 0 es el global)
-            console.log("🔍 Buscando novedades en los Charts mundiales...");
-            const chartData = await axios.get('https://api.deezer.com/chart/0/tracks?limit=100');
-            const tracks = chartData.data.data || [];
+        for (const genreId of genreIds) {
+            try {
+                console.log(`🔍 Escaneando Chart ID: ${genreId}...`);
+                const chartData = await axios.get(`https://api.deezer.com/chart/${genreId}/tracks?limit=100`);
+                const tracks = chartData.data.data || [];
 
-            for (const trackInfo of tracks) {
-                const songId = trackInfo.id;
-                const title = trackInfo.title;
-                const artist = trackInfo.artist.name;
+                for (const trackInfo of tracks) {
+                    const songId = trackInfo.id;
+                    const title = trackInfo.title;
+                    const artist = trackInfo.artist.name;
 
-                if (processedSongs.has(songId)) continue;
+                    if (processedSongs.has(songId)) continue;
 
-                console.log(`🎵 Procesando: ${title} - ${artist}`);
+                    console.log(`🎵 Cosechando: ${title} - ${artist}`);
 
-                try {
-                    // Obtener info detallada
-                    const detailed = await nativeDeezer.get(songId, "track");
-                    if (!detailed || !detailed.info) continue;
+                    try {
+                        const detailed = await nativeDeezer.get(songId, "track");
+                        if (!detailed || !detailed.info) continue;
 
-                    // Descargar stream
-                    const streamData = await nativeDeezer.getTrackStream(detailed.info);
-                    if (!streamData) continue;
+                        const streamData = await nativeDeezer.getTrackStream(detailed.info);
+                        if (!streamData) continue;
 
-                    // Convertir stream a buffer
-                    const chunks = [];
-                    for await (const chunk of streamData.stream) {
-                        chunks.push(chunk);
+                        const chunks = [];
+                        for await (const chunk of streamData.stream) {
+                            chunks.push(chunk);
+                        }
+                        const fullBuffer = Buffer.concat(chunks);
+
+                        const success = await uploadToTelegram(fullBuffer, title.replace(/[^a-zA-Z0-9- _]/g, ''), artist);
+
+                        if (success) {
+                            console.log(`✅ Guardada: ${title}`);
+                            processedSongs.add(songId);
+                        }
+
+                        // Pausa de 4 segundos para evitar baneos
+                        await sleep(4000);
+
+                    } catch (err) {
+                        console.error(`Error procesando: ${title}`, err.message);
                     }
-                    const fullBuffer = Buffer.concat(chunks);
-
-                    // Subir a Telegram
-                    const success = await uploadToTelegram(fullBuffer, title.replace(/[^a-zA-Z0-9- _]/g, ''), artist);
-
-                    if (success) {
-                        console.log(`✅ [OK] Guardada en Telegram: ${title}`);
-                        processedSongs.add(songId);
-                    }
-
-                    // Espera de 5 segundos para no saturar a Telegram ni a Deezer
-                    await sleep(5000);
-
-                } catch (songErr) {
-                    console.error(`❌ Error con canción ${title}:`, songErr.message);
                 }
+            } catch (err) {
+                console.error(`Error en Chart ${genreId}:`, err.message);
             }
-
-            console.log("💤 Ciclo completado. Esperando 1 hora para nuevas canciones...");
-            await sleep(3600000); // Esperar 1 hora antes de volver a revisar los charts
-
-        } catch (err) {
-            console.error("💥 Error en el ciclo principal:", err.message);
-            await sleep(60000); // Esperar 1 minuto si hay error de red
+            // Pausa entre cambios de género
+            await sleep(20000);
         }
+
+        console.log("💤 Ciclo completo. Reiniciando en 10 minutos para captar novedades...");
+        await sleep(600000); // 10 minutos
     }
 }
 
