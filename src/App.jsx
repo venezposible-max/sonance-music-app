@@ -56,9 +56,10 @@ export default function App() {
 
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isAndroid = /android/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || window.location.search.includes('mode=standalone') || !!window.Capacitor;
+    const isWebView = /(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)|wv/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || window.location.search.includes('mode=standalone') || !!window.Capacitor || isWebView;
+    const [bannerDismissed, setBannerDismissed] = useState(() => localStorage.getItem('fm_dismiss_install') === 'true');
 
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const apiURL = (isLocal && !isStandalone) ? "http://localhost:4000/api" : "https://sonance-eight-puce.vercel.app/api";
 
     const haptic = (type = 'light') => {
@@ -331,8 +332,9 @@ export default function App() {
                         {activeTab === 'EXPLORE' && (
                             <>
                                 {/* --- BANNER DE INSTALACIÓN OPTIMIZADO --- */}
-                                {!isStandalone && (window.innerWidth < 1024) && (
+                                {!isStandalone && !bannerDismissed && (window.innerWidth < 1024) && (
                                     <div style={{
+                                        position: 'relative',
                                         margin: '0 0 24px 0',
                                         padding: '20px',
                                         background: 'rgba(255,255,255,0.03)',
@@ -343,6 +345,12 @@ export default function App() {
                                         justifyContent: 'space-between',
                                         backdropFilter: 'blur(10px)'
                                     }}>
+                                        <div
+                                            onClick={() => { setBannerDismissed(true); localStorage.setItem('fm_dismiss_install', 'true'); }}
+                                            style={{ position: 'absolute', top: '6px', right: '6px', padding: '4px', opacity: 0.5, cursor: 'pointer', zIndex: 10 }}
+                                        >
+                                            <X size={14} color="#fff" />
+                                        </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                             <div style={{ width: '45px', height: '45px', background: 'var(--s-gradient)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Smartphone size={24} color="#fff" />
