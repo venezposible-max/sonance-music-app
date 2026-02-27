@@ -118,7 +118,7 @@ export function useAudioEngine({ apiURL, haptic, getActiveList, offlineSongsRef 
                     artist: song.artist || 'Desconocido',
                     album: song.album || 'Sonance App',
                     artwork: [
-                        { src: song.thumbnail || 'https://sonance-eight.vercel.app/icon-512x512.png', sizes: '512x512', type: 'image/jpeg' }
+                        { src: song.thumbnail || 'https://sonance-music-app-production.up.railway.app/icon-512x512.png', sizes: '512x512', type: 'image/jpeg' }
                     ]
                 });
             }
