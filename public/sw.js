@@ -1,7 +1,7 @@
-// Sonance Service Worker v8 - Background Audio Edition
+// Sonance Service Worker v9 - Background Audio Edition
 // ============================================================
 
-const CACHE_NAME = 'sonance-music-v8';
+const CACHE_NAME = 'sonance-music-v9';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',

@@ -290,11 +290,35 @@ export default function App() {
         setPlaylists({ ...playlists, "Mis Favoritas": playlists["Mis Favoritas"].filter(s => s.id !== songId) });
     };
 
-    const downloadSong = (song) => {
-        const titleSafe = encodeURIComponent(song.title || 'song');
-        const sqSafe = encodeURIComponent((song.artist || '') + ' ' + (song.title || ''));
-        const url = `${apiURL}/stream_final?id=${song.id}&sq=${sqSafe}&dl=1&title=${titleSafe}`;
-        const a = document.createElement('a'); a.href = url; a.download = `${titleSafe}.mp3`; a.click();
+    const downloadSong = async (song) => {
+        try {
+            setDownloadingIds(prev => new Set(prev).add(song.id));
+            const titleSafe = encodeURIComponent(song.title || 'song');
+            const sqSafe = encodeURIComponent((song.artist || '') + ' ' + (song.title || ''));
+            const url = `${apiURL}/stream_final?id=${song.id}&sq=${sqSafe}&dl=1&title=${titleSafe}`;
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Download failed");
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = `${(song.title || 'Sonance').replace(/[^a-zA-Z0-9- _]/g, '')}.mp3`;
+            document.body.appendChild(a);
+            a.click();
+
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+            }, 10000);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setDownloadingIds(prev => { const n = new Set(prev); n.delete(song.id); return n; });
+        }
     };
 
     return (
