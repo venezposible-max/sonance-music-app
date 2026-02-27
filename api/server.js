@@ -281,68 +281,24 @@ app.get(['/api/stream_final', '/api/stream_final/:any', '/stream_final', '/strea
 
         res.setHeader('Content-Type', 'audio/mpeg');
 
-        // Limitar chunking para evitar timeout de Vercel Serverless (Max 4.5MB payload o timeout)
-        let startByte = 0;
-        let endByte = size ? size - 1 : undefined;
-
         const range = req.headers.range;
-        if (range && range.startsWith('bytes=')) {
-            const parts = range.replace(/bytes=/, "").split("-");
-            startByte = parseInt(parts[0], 10) || 0;
-            if (parts[1]) endByte = parseInt(parts[1], 10);
-        }
-
-        const MAX_CHUNK = 2 * 1024 * 1024; // 2 MB max por petición
-        if (endByte === undefined) endByte = size ? size - 1 : startByte + MAX_CHUNK;
-
-        if (size && endByte >= size) endByte = size - 1;
-        if (endByte - startByte > MAX_CHUNK) endByte = startByte + MAX_CHUNK;
-
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Content-Type', 'audio/mpeg');
-
-        if (range || size) {
-            res.status(206);
-            res.setHeader('Content-Range', `bytes ${startByte}-${endByte}/${size || '*'}`);
-            res.setHeader('Content-Length', endByte - startByte + 1);
+        if (range && size) {
+            res.setHeader('Accept-Ranges', 'bytes');
+            if (range === 'bytes=0-') {
+                res.status(206);
+                res.setHeader('Content-Range', `bytes 0-${size - 1}/${size}`);
+                res.setHeader('Content-Length', size);
+            } else {
+                res.status(200);
+                res.setHeader('Content-Length', size);
+            }
         } else {
+            res.setHeader('Accept-Ranges', 'bytes');
+            if (size) res.setHeader('Content-Length', size);
             res.status(200);
         }
 
-        let bytesPassed = 0;
-        const targetOutputSize = endByte - startByte + 1;
-        const { Transform } = require('stream');
-
-        const rangeWrapper = new Transform({
-            transform(chunk, encoding, callback) {
-                if (bytesPassed >= startByte + targetOutputSize) return callback(); // Done
-
-                let sliceStart = 0;
-                let sliceEnd = chunk.length;
-
-                if (bytesPassed < startByte) {
-                    sliceStart = Math.min(chunk.length, startByte - bytesPassed);
-                }
-
-                if (bytesPassed + chunk.length > startByte + targetOutputSize) {
-                    sliceEnd = (startByte + targetOutputSize) - bytesPassed;
-                }
-
-                if (sliceEnd > sliceStart) {
-                    this.push(chunk.slice(sliceStart, sliceEnd));
-                }
-
-                bytesPassed += chunk.length;
-
-                if (bytesPassed >= startByte + targetOutputSize) {
-                    if (stream.destroy) stream.destroy(); // Cancelar fuente para ahorrar recursos
-                }
-
-                callback();
-            }
-        });
-
-        stream.pipe(rangeWrapper).pipe(res);
+        stream.pipe(res);
 
         stream.on('error', (err) => {
             console.error("Stream Error:", err.message);
