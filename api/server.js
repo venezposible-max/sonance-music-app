@@ -281,57 +281,43 @@ app.get(['/api/stream_final', '/api/stream_final/:any', '/stream_final', '/strea
 
         res.setHeader('Content-Type', 'audio/mpeg');
 
-        const range = req.headers.range;
-
-        // BUFFERING COMPLETO EN RAM:
-        // Evitamos que el Serverless function muera por timeout de Vercel a los 10s cuando los teléfonos descargan la canción lentamente (Backpressure del HTML5 Audio)
-        const chunks = [];
-        let downloadedSize = 0;
-        const MAX_RAM_BUFFER = 25 * 1024 * 1024; // 25 MB Max
-
-        try {
-            for await (const chunk of stream) {
-                chunks.push(chunk);
-                downloadedSize += chunk.length;
-                if (downloadedSize > MAX_RAM_BUFFER) {
-                    if (stream.destroy) stream.destroy();
-                    break;
-                }
-            }
-        } catch (downloadErr) {
-            console.error("Error buffering stream:", downloadErr);
-        }
-
-        if (chunks.length === 0) return res.status(500).end();
-
-        const buffer = Buffer.concat(chunks);
-        const actualSize = buffer.length;
+        // ASYNC BUFFERING EN TIEMPO REAL:
+        // Evitamos el backpressure del "pipe()" (que era lo que mataba la conexión a los 10 segundos). 
+        // Empezamos a enviarle la canción al celular en el MILISEGUNDO 1 para garantizar arranque rápido,
+        // pero obligamos a descargar la canción desde Deezer violéntamente en segundo plano.
 
         res.setHeader('Accept-Ranges', 'bytes');
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Cache-Control', 'public, s-maxage=31536000, max-age=31536000, stale-while-revalidate');
-        res.setHeader('X-Fast-Buffer', 'true');
 
-        if (range) {
-            const parts = range.replace(/bytes=/, "").split("-");
-            const startByte = parseInt(parts[0], 10) || 0;
-            let endByte = parts[1] ? parseInt(parts[1], 10) : actualSize - 1;
-
-            if (startByte >= actualSize) {
-                res.status(416).setHeader('Content-Range', `bytes */${actualSize}`);
-                return res.end();
+        const range = req.headers.range;
+        if (range && size) {
+            if (range === 'bytes=0-') {
+                res.status(206);
+                res.setHeader('Content-Range', `bytes 0-${size - 1}/${size}`);
+                res.setHeader('Content-Length', size);
+            } else {
+                res.status(200);
+                res.setHeader('Content-Length', size);
             }
-            if (endByte >= actualSize) endByte = actualSize - 1;
-
-            res.status(206);
-            res.setHeader('Content-Range', `bytes ${startByte}-${endByte}/${actualSize}`);
-            res.setHeader('Content-Length', endByte - startByte + 1);
-            res.end(buffer.slice(startByte, endByte + 1));
         } else {
+            if (size) res.setHeader('Content-Length', size);
             res.status(200);
-            res.setHeader('Content-Length', actualSize);
-            res.end(buffer);
         }
+
+        // Descarga violenta sin restricción de memoria RAM ni backpressure:
+        stream.on('data', (chunk) => {
+            res.write(chunk);
+        });
+
+        stream.on('end', () => {
+            res.end();
+        });
+
+        stream.on('error', (err) => {
+            console.error("Stream Error Real-time:", err.message);
+            if (!res.writableEnded) res.end();
+        });
 
         res.on('close', () => { if (stream && stream.destroy) stream.destroy(); });
 
