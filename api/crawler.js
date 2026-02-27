@@ -57,7 +57,7 @@ async function startHarvesting() {
                     console.log(`🎵 Cosechando: ${title} - ${artist}`);
 
                     try {
-                        const detailed = await nativeDeezer.get(songId, "track");
+                        const detailed = await nativeDeezer.get(String(songId), "track");
                         if (!detailed || !detailed.info) continue;
 
                         const streamData = await nativeDeezer.getTrackStream(detailed.info);
