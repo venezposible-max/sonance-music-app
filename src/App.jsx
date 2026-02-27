@@ -301,12 +301,26 @@ export default function App() {
             if (!response.ok) throw new Error("Download failed");
 
             const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
+            const fileName = `${(song.title || 'Sonance').replace(/[^a-zA-Z0-9- _]/g, '')}.mp3`;
 
+            // iOS PWA (Standalone) workaround using Web Share API
+            if (isIOS && navigator.canShare) {
+                const file = new File([blob], fileName, { type: 'audio/mpeg' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: fileName
+                    });
+                    return; // Exit directly, user saves via iOS Share Sheet ("Guardar en Archivos")
+                }
+            }
+
+            // Default behavior for other browsers
+            const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = blobUrl;
-            a.download = `${(song.title || 'Sonance').replace(/[^a-zA-Z0-9- _]/g, '')}.mp3`;
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
 
