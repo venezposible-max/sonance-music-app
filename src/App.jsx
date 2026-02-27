@@ -59,7 +59,7 @@ export default function App() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || window.location.search.includes('mode=standalone') || !!window.Capacitor;
 
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiURL = (isLocal && !isStandalone) ? "http://localhost:4000/api" : "https://sonance-music-app-production.up.railway.app/api";
+    const apiURL = (isLocal && !isStandalone) ? "http://localhost:4000/api" : "https://sonance-eight-puce.vercel.app/api";
 
     const haptic = (type = 'light') => {
         if (!navigator.vibrate) return;
