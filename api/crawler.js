@@ -13,7 +13,7 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function uploadToTelegram(buffer, title, artist) {
+async function uploadToTelegram(buffer, title, artist, thumbnail) {
     try {
         const formData = new FormData();
         const blob = new Blob([buffer], { type: 'audio/mpeg' });
@@ -21,6 +21,17 @@ async function uploadToTelegram(buffer, title, artist) {
         formData.append('audio', blob, `${title}.mp3`);
         formData.append('title', title);
         formData.append('performer', artist);
+
+        // Adjuntar carátula si existe
+        if (thumbnail) {
+            try {
+                const thumbRes = await fetch(thumbnail);
+                const thumbBlob = await thumbRes.blob();
+                formData.append('thumbnail', thumbBlob, 'cover.jpg');
+            } catch (e) {
+                console.error("Error capturando carátula:", e.message);
+            }
+        }
 
         const response = await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendAudio`, {
             method: 'POST',
@@ -35,7 +46,7 @@ async function uploadToTelegram(buffer, title, artist) {
 }
 
 async function startHarvesting() {
-    console.log("🚀 Iniciando Rastreador Automático MULTI-GÉNERO (24/7)...");
+    console.log("🚀 Iniciando Rastreador Automático MULTI-GÉNERO (24/7) con Carátulas...");
 
     // IDs de Charts de Deezer: Global (0), Pop (132), Rock (116), Latina (197), Reggaeton (152), Dance (113), etc.
     const genreIds = [0, 132, 116, 197, 152, 113, 165, 85, 106];
@@ -51,6 +62,7 @@ async function startHarvesting() {
                     const songId = trackInfo.id;
                     const title = trackInfo.title;
                     const artist = trackInfo.artist.name;
+                    const thumbnail = trackInfo.album?.cover_big; // Carátula HD
 
                     if (processedSongs.has(songId)) continue;
 
@@ -69,10 +81,15 @@ async function startHarvesting() {
                         }
                         const fullBuffer = Buffer.concat(chunks);
 
-                        const success = await uploadToTelegram(fullBuffer, title.replace(/[^a-zA-Z0-9- _]/g, ''), artist);
+                        const success = await uploadToTelegram(
+                            fullBuffer,
+                            title.replace(/[^a-zA-Z0-9- _]/g, ''),
+                            artist,
+                            thumbnail
+                        );
 
                         if (success) {
-                            console.log(`✅ Guardada: ${title}`);
+                            console.log(`✅ Guardada con carátula: ${title}`);
                             processedSongs.add(songId);
                         }
 
