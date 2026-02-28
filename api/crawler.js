@@ -22,7 +22,6 @@ async function uploadToTelegram(buffer, title, artist, thumbnail) {
         formData.append('title', title);
         formData.append('performer', artist);
 
-        // Adjuntar carátula si existe
         if (thumbnail) {
             try {
                 const thumbRes = await fetch(thumbnail);
@@ -46,69 +45,72 @@ async function uploadToTelegram(buffer, title, artist, thumbnail) {
 }
 
 async function startHarvesting() {
-    console.log("🚀 Iniciando Rastreador Automático MULTI-GÉNERO (24/7) con Carátulas...");
-
-    // IDs de Charts de Deezer: Global (0), Pop (132), Rock (116), Latina (197), Reggaeton (152), Dance (113), etc.
-    const genreIds = [0, 132, 116, 197, 152, 113, 165, 85, 106];
+    console.log("🚀 Iniciando Rastreador MODERADO (Top 100 Diario - Ahorro de Energía)...");
 
     while (true) {
-        for (const genreId of genreIds) {
-            try {
-                console.log(`🔍 Escaneando Chart ID: ${genreId}...`);
-                const chartData = await axios.get(`https://api.deezer.com/chart/${genreId}/tracks?limit=100`);
-                const tracks = chartData.data.data || [];
+        try {
+            console.log("🔍 Escaneando Top 100 Global para cosechar éxitos recientes...");
+            // Obtenemos el Chart Global (ID 0) con límite de 100
+            const chartData = await axios.get(`https://api.deezer.com/chart/0/tracks?limit=100`);
+            const tracks = chartData.data.data || [];
 
-                for (const trackInfo of tracks) {
-                    const songId = trackInfo.id;
-                    const title = trackInfo.title;
-                    const artist = trackInfo.artist.name;
-                    const thumbnail = trackInfo.album?.cover_big; // Carátula HD
+            let newsFound = 0;
 
-                    if (processedSongs.has(songId)) continue;
+            for (const trackInfo of tracks) {
+                const songId = trackInfo.id;
+                const title = trackInfo.title;
+                const artist = trackInfo.artist.name;
+                const thumbnail = trackInfo.album?.cover_big;
 
-                    console.log(`🎵 Cosechando: ${title} - ${artist}`);
+                if (processedSongs.has(songId)) continue;
 
-                    try {
-                        const detailed = await nativeDeezer.get(String(songId), "track");
-                        if (!detailed || !detailed.info) continue;
+                console.log(`🎵 Cosechando Éxito: ${title} - ${artist}`);
 
-                        const streamData = await nativeDeezer.getTrackStream(detailed.info);
-                        if (!streamData) continue;
+                try {
+                    const detailed = await nativeDeezer.get(String(songId), "track");
+                    if (!detailed || !detailed.info) continue;
 
-                        const chunks = [];
-                        for await (const chunk of streamData.stream) {
-                            chunks.push(chunk);
-                        }
-                        const fullBuffer = Buffer.concat(chunks);
+                    const streamData = await nativeDeezer.getTrackStream(detailed.info);
+                    if (!streamData) continue;
 
-                        const success = await uploadToTelegram(
-                            fullBuffer,
-                            title.replace(/[^a-zA-Z0-9- _]/g, ''),
-                            artist,
-                            thumbnail
-                        );
-
-                        if (success) {
-                            console.log(`✅ Guardada con carátula: ${title}`);
-                            processedSongs.add(songId);
-                        }
-
-                        // Pausa de 4 segundos para evitar baneos
-                        await sleep(4000);
-
-                    } catch (err) {
-                        console.error(`Error procesando: ${title}`, err.message);
+                    const chunks = [];
+                    for await (const chunk of streamData.stream) {
+                        chunks.push(chunk);
                     }
-                }
-            } catch (err) {
-                console.error(`Error en Chart ${genreId}:`, err.message);
-            }
-            // Pausa entre cambios de género
-            await sleep(20000);
-        }
+                    const fullBuffer = Buffer.concat(chunks);
 
-        console.log("💤 Ciclo completo. Reiniciando en 10 minutos para captar novedades...");
-        await sleep(600000); // 10 minutos
+                    const success = await uploadToTelegram(
+                        fullBuffer,
+                        title.replace(/[^a-zA-Z0-9- _]/g, ''),
+                        artist,
+                        thumbnail
+                    );
+
+                    if (success) {
+                        console.log(`✅ Guardada: ${title}`);
+                        processedSongs.add(songId);
+                        newsFound++;
+                    }
+
+                    // Pausa de 10 segundos entre canciones (Super seguro)
+                    await sleep(10000);
+
+                } catch (err) {
+                    console.error(`Error procesando: ${title}`, err.message);
+                }
+            }
+
+            if (newsFound === 0) {
+                console.log("✅ Todo el Top 100 ya está en tu nube.");
+            }
+
+            console.log("💤 Ciclo completado. Esperando 12 horas para ver si hay nuevos éxitos...");
+            await sleep(43200000); // 12 horas de descanso para no gastar dinero innecesario
+
+        } catch (err) {
+            console.error("Error en ciclo de ahorro:", err.message);
+            await sleep(3600000); // Reintentar en 1 hora si falla la red
+        }
     }
 }
 
